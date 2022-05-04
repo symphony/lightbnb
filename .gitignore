@@ -1,0 +1,7 @@
+node_modules
+seeds
+Thumbs.db
+.env
+.DS_Store
+.vscode
+.idea
