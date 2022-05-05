@@ -25,10 +25,10 @@ CREATE TABLE properties (
   parking_spaces SMALLINT NOT NULL DEFAULT 0,
   number_of_bathrooms SMALLINT NOT NULL DEFAULT 0,
 
-  country VARCHAR(255),
+  country VARCHAR(255) DEFAULT 'Canada',
   street VARCHAR(255),
   city VARCHAR(255),
-  province VARCHAR(4) REFERENCES provinces(code),
+  province VARCHAR(4) REFERENCES provinces(code) DEFAULT 'BC',
   postal_code VARCHAR(20),
   active BOOLEAN DEFAULT false
 );
@@ -47,5 +47,5 @@ CREATE TABLE property_reviews (
   guest_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   reservation_id INTEGER REFERENCES reservations(id) ON DELETE CASCADE,
   rating SMALLINT NOT NULL DEFAULT 0,
-  review TEXT
+  message TEXT
 );
