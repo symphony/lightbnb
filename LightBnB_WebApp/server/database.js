@@ -24,17 +24,16 @@ pool.connect();
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function(email) {
-  let user;
-  for (const userId in users) {
-    user = users[userId];
-    if (user.email.toLowerCase() === email.toLowerCase()) {
-      break;
-    } else {
-      user = null;
-    }
-  }
-  return Promise.resolve(user);
-}
+  return pool
+    .query(`SELECT * FROM users WHERE email = $1;`, [email.toLowerCase()])
+    .then((result) => {
+      return result.rows[0] || null;
+    })
+    .catch((err) => {
+      console.log('Error getting user with email:', err?.message || err);
+    });
+};
+
 exports.getUserWithEmail = getUserWithEmail;
 
 /**
@@ -43,8 +42,16 @@ exports.getUserWithEmail = getUserWithEmail;
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithId = function(id) {
-  return Promise.resolve(users[id]);
-}
+  return pool
+    .query(`SELECT * FROM users WHERE id = $1;`, [id])
+    .then((result) => {
+      return result.rows[0] || null;
+    })
+    .catch((err) => {
+      console.log('Error getting user with id:', err?.message || err);
+    });
+};
+
 exports.getUserWithId = getUserWithId;
 
 
@@ -53,12 +60,19 @@ exports.getUserWithId = getUserWithId;
  * @param {{name: string, password: string, email: string}} user
  * @return {Promise<{}>} A promise to the user.
  */
-const addUser =  function(user) {
-  const userId = Object.keys(users).length + 1;
-  user.id = userId;
-  users[userId] = user;
-  return Promise.resolve(user);
-}
+const addUser = function(user) {
+  // Have to manually specify each key name so the order stays consistent
+  const values = [user.name, user.email, user.password];
+  pool
+    .query(`INSERT INTO users (name, email, password) VALUES ($1, $2, $3)
+    RETURNING *`, values)
+    .then((res) => {
+      return res.rows[0];
+    })
+    .catch((err) => {
+      console.log('Error adding user:', err?.message || err);
+    });
+};
 exports.addUser = addUser;
 
 /// Reservations
@@ -70,7 +84,7 @@ exports.addUser = addUser;
  */
 const getAllReservations = function(guest_id, limit = 10) {
   return getAllProperties(null, 2);
-}
+};
 exports.getAllReservations = getAllReservations;
 
 /// Properties
@@ -83,12 +97,12 @@ exports.getAllReservations = getAllReservations;
  */
 const getAllProperties = function(options, limit = 10) {
   return pool
-  .query(`SELECT * FROM properties LIMIT $1`, [limit])
+    .query(`SELECT * FROM properties LIMIT $1`, [limit])
     .then((result) => {
       return result.rows;
     })
     .catch((err) => {
-      console.log(err.message);
+      console.log('Error getting all properties:', err?.message || err);
     });
 };
 exports.getAllProperties = getAllProperties;
@@ -104,5 +118,5 @@ const addProperty = function(property) {
   property.id = propertyId;
   properties[propertyId] = property;
   return Promise.resolve(property);
-}
+};
 exports.addProperty = addProperty;
