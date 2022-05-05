@@ -114,29 +114,33 @@ const getAllProperties = function (options, limit = 10) {
   JOIN property_reviews ON properties.id = property_id
   `;
 
+  // helper
+  const and = () => queryParams.length > 1 ? 'AND' : 'WHERE';
+
   if (options.city) {
-    queryParams.push(`%${options.city.slice(1)}%`);
-    queryString += `\n\tWHERE city LIKE $${queryParams.length} `;
+    const city = options.city.trim().slice(1);
+    queryParams.push(`%${city}%`);
+    queryString += `\n${and()} city LIKE $${queryParams.length}\n`;
   }
 
   if (options.owner_id) {
-    queryParams.push(options.owner_id);
-    queryString += `\n\tAND owner_id = $${queryParams.length}`;
+    queryParams.push(options.owner_id.trim());
+    queryString += `\n${and()} owner_id = $${queryParams.length}\n`;
   }
 
   if (options.minimum_price_per_night) {
     queryParams.push(options.minimum_price_per_night * 100);
-    queryString += `\n\tAND price_per_night >= $${queryParams.length}`;
+    queryString += `\n${and()} cost_per_night >= $${queryParams.length}\n`;
   }
 
   if (options.maximum_price_per_night) {
     queryParams.push(options.maximum_price_per_night * 100);
-    queryString += `\n\tAND price_per_night <= $${queryParams.length}`;
+    queryString += `\n${and()} cost_per_night <= $${queryParams.length}\n`;
   }
 
   if (options.minimum_rating ) {
     queryParams.push(options.minimum_rating);
-    queryString += `\n\tAND rating >= $${queryParams.length}`;
+    queryString += `\n${and()} rating >= $${queryParams.length}\n`;
   }
 
 
