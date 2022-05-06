@@ -119,7 +119,7 @@ exports.getAllReservations = getAllReservations;
  */
 const getAllProperties = function(options, limit = 10) {
 
-  const queryParams = []
+  const queryParams = [];
   let queryString = `
   SELECT properties.*, avg(property_reviews.rating) as average_rating
   FROM properties
@@ -131,34 +131,32 @@ const getAllProperties = function(options, limit = 10) {
   if (options.city) {
     const city = options.city.trim().toUpperCase();
     queryParams.push(`%${city}%`);
-    queryString += `\n${and()} UPPER(city) LIKE $${queryParams.length}`;
+    queryString += `\n ${and()} UPPER(city) LIKE $${queryParams.length}`;
   }
 
   if (options.owner_id) {
     queryParams.push(options.owner_id);
-    queryString += `\n${and()} owner_id = $${queryParams.length}`;
+    queryString += `\n ${and()} owner_id = $${queryParams.length}`;
   }
 
   if (options.minimum_price_per_night) {
     queryParams.push(options.minimum_price_per_night * 100);
-    queryString += `\n${and()} cost_per_night >= $${queryParams.length}`;
+    queryString += `\n ${and()} cost_per_night >= $${queryParams.length}`;
   }
 
   if (options.maximum_price_per_night) {
     queryParams.push(options.maximum_price_per_night * 100);
-    queryString += `\n${and()} cost_per_night <= $${queryParams.length}`;
+    queryString += `\n ${and()} cost_per_night <= $${queryParams.length}`;
   }
 
   queryString += `
   GROUP BY properties.id
   `;
 
-  console.log('query string:\n', queryString);
-
   // HAVING condition
   if (options.minimum_rating) {
     queryParams.push(options.minimum_rating);
-    queryString += `\nHAVING avg(property_reviews.rating) >= $${queryParams.length}`;
+    queryString += `\n HAVING avg(property_reviews.rating) >= $${queryParams.length}`;
   }
 
   // last section of query string. add limit parameter
@@ -188,7 +186,7 @@ const addProperty = function(property) {
   // map values from form submission to individual arrays
   const columns = Object.keys(property);
   const values = columns.map((k) => property[k]);
-  const indexes = columns.map((k, i) => `$${i+1}`);
+  const indexes = columns.map((k, i) => `$${i + 1}`);
 
   // form submission exception handling
   if (values.includes('')) return Promise.reject('Property not added. Incomplete input fields');
@@ -200,7 +198,7 @@ const addProperty = function(property) {
   RETURNING *;
   `;
 
-  // perform insert
+  // insert into properties table
   return pool
     .query(queryString, values)
     .then((res) => {
