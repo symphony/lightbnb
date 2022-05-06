@@ -13,7 +13,7 @@ const pool = new Pool({
   database: process.env.DB
 });
 
-pool.connect();
+
 
 
 /// Users
@@ -171,26 +171,27 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  // Using entries and reduce so that order stays identical
-  const [columns, values] = Object.entries(property)
-    .reduce((acc, [key, value]) => {
+  // Using entries and reduce so the order stays identical
+  const [columns, values, indexes] = Object.entries(property)
+    .reduce((acc, [key, value], index) => {
       acc[0].push(key);
       acc[1].push(value);
+      acc[2].push(`$${index + 1}`)
       return acc;
-    }, [[], []]);
-
+    }, [[], [], []]);
   const queryString = `
-  INSERT INTO users (${JSON.stringify(...columns)})
-  VALUES (${paramIndexes})
+  INSERT INTO properties (${columns.join()})
+  VALUES (${indexes.join()})
   RETURNING *;
   `
   return pool
   .query(queryString, values)
   .then((res) => {
+    console.log('added property', res.rows[0]);
     return res.rows[0] || null;
   })
   .catch((err) => {
-    console.log('Error getting all properties:', err?.message || err);
+    console.log('Error adding property:', err?.message || err);
   });
 };
 exports.addProperty = addProperty;
