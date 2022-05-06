@@ -129,9 +129,9 @@ const getAllProperties = function(options, limit = 10) {
   // append optional parameters
   const and = () => queryParams.length > 1 ? 'AND' : 'WHERE';
   if (options.city) {
-    const city = options.city.trim().slice(1);
+    const city = options.city.trim().toUpperCase();
     queryParams.push(`%${city}%`);
-    queryString += `\n${and()} city LIKE $${queryParams.length}`;
+    queryString += `\n${and()} UPPER(city) LIKE $${queryParams.length}`;
   }
 
   if (options.owner_id) {
@@ -152,6 +152,8 @@ const getAllProperties = function(options, limit = 10) {
   queryString += `
   GROUP BY properties.id
   `;
+
+  console.log('query string:\n', queryString);
 
   // HAVING condition
   if (options.minimum_rating) {
@@ -189,7 +191,7 @@ const addProperty = function(property) {
   const indexes = columns.map((k, i) => `$${i+1}`);
 
   // form submission exception handling
-  if (values.includes('')) return Promise.reject('Property not added. Incomplete input fields')
+  if (values.includes('')) return Promise.reject('Property not added. Incomplete input fields');
 
   // spread dynamic values into template
   const queryString = `
