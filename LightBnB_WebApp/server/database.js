@@ -1,7 +1,3 @@
-const properties = require('./json/properties.json');
-const users = require('./json/users.json');
-
-
 // Set up and run database
 require('dotenv').config();
 const { Pool } = require('pg');
@@ -12,9 +8,6 @@ const pool = new Pool({
   host: process.env.HOST,
   database: process.env.DB
 });
-
-
-
 
 /// Users
 /**
@@ -106,16 +99,35 @@ exports.getAllReservations = getAllReservations;
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
  */
-const getAllProperties = function (options, limit = 10) {
-  const queryParams = [];
+const getAllProperties = function(options, limit = 10) {
+  // helper wip for get all properties with options
+  // const buildString = function(acc, [name, value]) {
+  //   let i = 0;
+  //   return () => {
+  //     console.log('\nacc', acc, '\nname', name, '\nvalue', value, '\nindex', i);
+  //     if (!value) return acc;
+  //     i++;
+  //     city = () => [`city LIKE $${i + 1}`, `%${value.trim().slice(1)}%`],
+  //     owner_id = () => [`owner_id = $${i + 1} `, value],
+  //     minimum_price_per_night = () => [`cost_per_night >= $${i + 1}`, value * 100],
+  //     maximum_price_per_night = () => [`cost_per_night <= $${i + 1}`, value * 100 || 2147483647],
+  //     acc[0].push(this[name]()[0]);
+  //     acc[1].push(this[name]()[1]);
+  //     return acc;
+  //   }
+  // }();
+  // const [optionsArr, queryParams] = Object.entries(options).reduce(buildString, [[], []]);
+  // console.log('options:\n' + optionsArr.join('\nAND '), queryParams);
+  // if (optionsArr.length) queryString += '\nWHERE ' + optionsArr.join('\nAND ');
+
+  const queryParams = []
   let queryString = `
   SELECT properties.*, avg(property_reviews.rating) as average_rating
   FROM properties
   JOIN property_reviews ON properties.id = property_id
   `;
 
-
-  // handle optional parameters
+  // append optional parameters
   const and = () => queryParams.length > 1 ? 'AND' : 'WHERE';
   if (options.city) {
     const city = options.city.trim().slice(1);
@@ -140,9 +152,10 @@ const getAllProperties = function (options, limit = 10) {
 
   queryString += `
   GROUP BY properties.id
-  `
+  `;
+
   // HAVING condition
-  if (options.minimum_rating ) {
+  if (options.minimum_rating) {
     queryParams.push(options.minimum_rating);
     queryString += `\nHAVING avg(property_reviews.rating) >= $${queryParams.length}`;
   }
@@ -155,13 +168,13 @@ const getAllProperties = function (options, limit = 10) {
   `;
 
   return pool
-  .query(queryString, queryParams)
-  .then((res) => {
-    return res.rows.length ? res.rows : null;
-  })
-  .catch((err) => {
-    console.log('Error getting all properties:', err?.message || err);
-  });
+    .query(queryString, queryParams)
+    .then((res) => {
+      return res.rows.length ? res.rows : null;
+    })
+    .catch((err) => {
+      console.log('Error getting all properties:', err?.message || err);
+    });
 };
 exports.getAllProperties = getAllProperties;
 
@@ -171,27 +184,28 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  // Using entries and reduce so the order stays identical
-  const [columns, values, indexes] = Object.entries(property)
-    .reduce((acc, [key, value], index) => {
-      acc[0].push(key);
-      acc[1].push(value);
-      acc[2].push(`$${index + 1}`)
-      return acc;
-    }, [[], [], []]);
+  if (Object.values(property).includes('')) return Promise.reject('Property not added. Incomplete input fields');
+
+  // map values from form submission to individual arrays
+  const columns = Object.keys(property);
+  const values = columns.map((k) => property[k]);
+  const indexes = columns.map((v, i) => `$${i+1}`);
+
+  // spread dynamic values into template
   const queryString = `
   INSERT INTO properties (${columns.join()})
   VALUES (${indexes.join()})
   RETURNING *;
-  `
+  `;
+
+  // perform insert
   return pool
-  .query(queryString, values)
-  .then((res) => {
-    console.log('added property', res.rows[0]);
-    return res.rows[0] || null;
-  })
-  .catch((err) => {
-    console.log('Error adding property:', err?.message || err);
-  });
+    .query(queryString, values)
+    .then((res) => {
+      return res.rows[0] || null;
+    })
+    .catch((err) => {
+      console.log('Error adding property:', err?.message || err);
+    });
 };
 exports.addProperty = addProperty;
