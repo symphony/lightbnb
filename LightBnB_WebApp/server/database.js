@@ -1,4 +1,4 @@
-// Set up and run database
+/// == database config ==
 require('dotenv').config();
 const { Pool } = require('pg');
 
@@ -9,7 +9,7 @@ const pool = new Pool({
   database: process.env.DB
 });
 
-/// Users
+/// == Users ==
 /**
  * Get a single user from the database given their email.
  * @param {String} email The email of the user.
@@ -65,7 +65,7 @@ const addUser = function(user) {
 exports.addUser = addUser;
 
 
-/// Reservations
+/// == Reservations ==
 /**
  * Get all reservations for a single user.
  * @param {string} guest_id The id of the user.
@@ -92,7 +92,25 @@ const getAllReservations = function(guest_id, limit = 10) {
 };
 exports.getAllReservations = getAllReservations;
 
-/// Properties
+// =helper= for get all properties with options
+// const buildString = function(acc, [name, value]) {
+//   let i = 0;
+//   console.log('\nacc', acc, '\nname', name, '\nvalue', value, '\nindex', i);
+//   if (!value) return acc;
+//   i++;
+//   city = () => [`city LIKE $${i + 1}`, `%${value.trim().slice(1)}%`],
+//   owner_id = () => [`owner_id = $${i + 1} `, value],
+//   minimum_price_per_night = () => [`cost_per_night >= $${i + 1}`, value * 100],
+//   maximum_price_per_night = () => [`cost_per_night <= $${i + 1}`, value * 100 || 2147483647],
+//   acc[0].push(this[name]()[0]);
+//   acc[1].push(this[name]()[1]);
+//   return acc;
+// }
+// const [optionsArr, queryParams] = Object.entries(options).reduce(buildString, [[], []]);
+// console.log('options:\n' + optionsArr.join('\nAND '), queryParams);
+// if (optionsArr.length) queryString += '\nWHERE ' + optionsArr.join('\nAND ');
+
+/// == Properties ==
 /**
  * Get all properties.
  * @param {{}} options An object containing query options.
@@ -100,25 +118,6 @@ exports.getAllReservations = getAllReservations;
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function(options, limit = 10) {
-  // helper wip for get all properties with options
-  // const buildString = function(acc, [name, value]) {
-  //   let i = 0;
-  //   return () => {
-  //     console.log('\nacc', acc, '\nname', name, '\nvalue', value, '\nindex', i);
-  //     if (!value) return acc;
-  //     i++;
-  //     city = () => [`city LIKE $${i + 1}`, `%${value.trim().slice(1)}%`],
-  //     owner_id = () => [`owner_id = $${i + 1} `, value],
-  //     minimum_price_per_night = () => [`cost_per_night >= $${i + 1}`, value * 100],
-  //     maximum_price_per_night = () => [`cost_per_night <= $${i + 1}`, value * 100 || 2147483647],
-  //     acc[0].push(this[name]()[0]);
-  //     acc[1].push(this[name]()[1]);
-  //     return acc;
-  //   }
-  // }();
-  // const [optionsArr, queryParams] = Object.entries(options).reduce(buildString, [[], []]);
-  // console.log('options:\n' + optionsArr.join('\nAND '), queryParams);
-  // if (optionsArr.length) queryString += '\nWHERE ' + optionsArr.join('\nAND ');
 
   const queryParams = []
   let queryString = `
@@ -184,12 +183,13 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  if (Object.values(property).includes('')) return Promise.reject('Property not added. Incomplete input fields');
-
   // map values from form submission to individual arrays
   const columns = Object.keys(property);
   const values = columns.map((k) => property[k]);
-  const indexes = columns.map((v, i) => `$${i+1}`);
+  const indexes = columns.map((k, i) => `$${i+1}`);
+
+  // form submission exception handling
+  if (values.includes('')) return Promise.reject('Property not added. Incomplete input fields')
 
   // spread dynamic values into template
   const queryString = `
@@ -202,6 +202,7 @@ const addProperty = function(property) {
   return pool
     .query(queryString, values)
     .then((res) => {
+      console.log('Listing added:', res.rows[0]);
       return res.rows[0] || null;
     })
     .catch((err) => {
